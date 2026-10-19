@@ -1,0 +1,27 @@
+{
+  "name": "image-service",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/client",
+    "packages/api",
+    "packages/web"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "npm run build -w @image-service/client && npm run build -w @image-service/api && npm run build -w @image-service/web",
+    "dev": "npm run build -w @image-service/client && concurrently -n api,web -c blue,magenta \"npm run dev -w @image-service/api\" \"npm run dev -w @image-service/web\"",
+    "start": "npm run start -w @image-service/api",
+    "test": "npm run build -w @image-service/client && npm test --workspaces --if-present",
+    "typecheck": "npm run build -w @image-service/client && npm run typecheck --workspaces --if-present",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6",
+    "prettier": "^3.9.10",
+    "typescript": "^7.0.2"
+  }
+}
