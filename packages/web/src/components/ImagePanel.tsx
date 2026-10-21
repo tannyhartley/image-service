@@ -8,6 +8,7 @@ interface Stat {
 }
 
 interface Props {
+  tag: string;
   title: string;
   loading: boolean;
   error?: ImageServiceError;
@@ -16,31 +17,32 @@ interface Props {
   empty: string;
 }
 
-export function ImagePanel({ title, loading, error, src, stats, empty }: Props) {
+export function ImagePanel({ tag, title, loading, error, src, stats, empty }: Props) {
   let body: ReactNode;
   if (error) {
     body = <ErrorNotice error={error} />;
   } else if (src) {
-    body = (
-      <div className="panel__image">
-        <img src={src} alt={title} />
-      </div>
-    );
+    body = <img src={src} alt={title} />;
   } else if (!loading) {
-    body = <p className="panel__empty muted">{empty}</p>;
+    body = <p className="frame__empty">{empty}</p>;
   }
 
   return (
-    <section className="card panel" aria-busy={loading}>
-      <header className="panel__header">
+    <section className="frame" aria-busy={loading}>
+      <header className="frame__caption">
+        <span className="frame__tag" aria-hidden="true">
+          {tag}
+        </span>
         <h2>{title}</h2>
         {loading && <span className="spinner" aria-label="Loading" />}
       </header>
-      <div className={loading ? 'panel__body panel__body--loading' : 'panel__body'}>
-        {body ?? <div className="panel__placeholder" />}
+      <div
+        className={`frame__body${error ? ' frame__body--error' : ''}${loading ? ' frame__body--loading' : ''}`}
+      >
+        {body}
       </div>
       {stats && !error && (
-        <dl className="stats">
+        <dl className="frame__stats">
           {stats.map((stat) => (
             <div key={stat.label}>
               <dt>{stat.label}</dt>

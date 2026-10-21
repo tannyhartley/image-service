@@ -40,14 +40,21 @@ export function App() {
   const result = processed.data;
 
   return (
-    <div className="layout">
-      <header className="masthead">
-        <h1>Image Service Playground</h1>
-        <p className="muted">
-          Resize and convert any public image. Every request below goes through the public API at{' '}
-          <code>{apiBaseUrl}</code>.
+    <div className="page">
+      <header className="topbar">
+        <h1 className="brand">
+          <span className="brand__mark" aria-hidden="true" />
+          image-service <span className="brand__sub">/ playground</span>
+        </h1>
+        <p className="topbar__api">
+          API <code>{apiBaseUrl}</code>
         </p>
       </header>
+
+      <p className="lede">
+        Resize and convert any public image. The form below <em>is</em> the query string: each field
+        sets one parameter, and the page calls the public API like any other client.
+      </p>
 
       <Controls
         form={form}
@@ -60,8 +67,9 @@ export function App() {
       <main className="results">
         <RequestPreview url={requestUrl} format={form.format || source?.format} />
 
-        <div className="panels">
+        <div className="frames">
           <ImagePanel
+            tag="A"
             title="Original"
             loading={original.loading}
             error={original.error}
@@ -76,6 +84,7 @@ export function App() {
             }
           />
           <ImagePanel
+            tag="B"
             title="Processed"
             loading={processed.loading}
             error={processed.error}
@@ -91,13 +100,13 @@ export function App() {
                     <>
                       {formatBytes(result.bytes)}
                       {source && (
-                        <span className="muted"> ({formatChange(source.bytes, result.bytes)})</span>
+                        <span className="delta"> {formatChange(source.bytes, result.bytes)}</span>
                       )}
                     </>
                   ),
                 },
                 {
-                  label: 'Server cache',
+                  label: 'Cache',
                   value: `${result.cache ?? 'n/a'} · ${result.elapsedMs} ms`,
                 },
               ]

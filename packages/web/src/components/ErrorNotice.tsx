@@ -18,7 +18,7 @@ export function ErrorNotice({ error }: { error: ImageServiceError }) {
         </ul>
       )}
       {(error.retryAfter || error.requestId) && (
-        <p className="muted small">
+        <p className="error__meta">
           {error.retryAfter ? `Retry after ${error.retryAfter}s. ` : ''}
           {error.requestId ? `Request ID: ${error.requestId}` : ''}
         </p>
