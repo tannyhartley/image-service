@@ -30,14 +30,17 @@ const envSchema = z.object({
   RATE_LIMIT_MAX: int(120),
   RATE_LIMIT_WINDOW_MS: int(60_000),
 
-  OUTPUT_CACHE_MAX_BYTES: int(256 * MB),
+  OUTPUT_CACHE_MAX_BYTES: int(128 * MB),
   OUTPUT_CACHE_TTL_MS: int(60 * 60_000),
-  SOURCE_CACHE_MAX_BYTES: int(128 * MB),
+  SOURCE_CACHE_MAX_BYTES: int(64 * MB),
   SOURCE_CACHE_TTL_MS: int(5 * 60_000),
   HTTP_CACHE_MAX_AGE_SECONDS: int(86_400, 0),
 
   MAX_CONCURRENT_JOBS: int(availableParallelism()),
   MAX_QUEUED_JOBS: int(64, 0),
+  // Each in-flight download buffers up to MAX_SOURCE_BYTES, so this bounds that memory.
+  MAX_CONCURRENT_FETCHES: int(8),
+  MAX_QUEUED_FETCHES: int(32, 0),
 });
 
 export interface FetchConfig {
@@ -71,6 +74,7 @@ export interface Config {
     httpMaxAgeSeconds: number;
   };
   jobs: { maxConcurrent: number; maxQueued: number };
+  fetches: { maxConcurrent: number; maxQueued: number };
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -107,5 +111,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       httpMaxAgeSeconds: e.HTTP_CACHE_MAX_AGE_SECONDS,
     },
     jobs: { maxConcurrent: e.MAX_CONCURRENT_JOBS, maxQueued: e.MAX_QUEUED_JOBS },
+    fetches: { maxConcurrent: e.MAX_CONCURRENT_FETCHES, maxQueued: e.MAX_QUEUED_FETCHES },
   };
 }

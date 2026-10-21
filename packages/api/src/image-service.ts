@@ -31,24 +31,29 @@ export type CacheStatus = 'HIT' | 'MISS';
  * Fetching, decoding and encoding are all expensive, so both the downloaded
  * source and the processed output are cached. LRUCache.fetch() also coalesces
  * concurrent requests for the same key into a single fetch/transform.
+ *
+ * Downloads and transforms each have their own limiter: the rate limit caps
+ * requests per minute, not how many buffers are held in memory at once.
  */
 export class ImageService {
   private readonly sources: LRUCache<string, Source>;
   private readonly outputs: LRUCache<string, ProcessedImage, TransformOptions & { url: URL }>;
   private readonly limiter: JobLimiter;
+  private readonly fetchLimiter: JobLimiter;
 
   constructor(
     private readonly config: Config,
     private readonly fetchSource: SourceFetcher,
   ) {
     this.limiter = new JobLimiter(config.jobs.maxConcurrent, config.jobs.maxQueued);
+    this.fetchLimiter = new JobLimiter(config.fetches.maxConcurrent, config.fetches.maxQueued);
 
     this.sources = new LRUCache({
       maxSize: config.cache.sourceMaxBytes,
       ttl: config.cache.sourceTtlMs,
       sizeCalculation: (source) => source.buffer.length,
       fetchMethod: async (href) => {
-        const { buffer } = await this.fetchSource(new URL(href));
+        const { buffer } = await this.fetchLimiter.run(() => this.fetchSource(new URL(href)));
         return { buffer, info: await inspectImage(buffer, config.image) };
       },
     });
@@ -92,6 +97,7 @@ export class ImageService {
   get stats() {
     return {
       jobs: this.limiter.stats,
+      fetches: this.fetchLimiter.stats,
       sourceCache: { entries: this.sources.size, bytes: this.sources.calculatedSize },
       outputCache: { entries: this.outputs.size, bytes: this.outputs.calculatedSize },
     };

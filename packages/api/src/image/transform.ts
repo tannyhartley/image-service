@@ -44,6 +44,10 @@ const SHARP_FIT: Record<CropMode, keyof FitEnum> = {
   scale: 'fill',
 };
 
+// libvips keeps its own operation cache (up to 50 MB by default). Results are
+// already cached by ImageService, so this would only hold extra memory.
+sharp.cache(false);
+
 const TRANSPARENT = { r: 0, g: 0, b: 0, alpha: 0 };
 const WHITE = { r: 255, g: 255, b: 255 };
 

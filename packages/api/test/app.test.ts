@@ -1,6 +1,7 @@
 import sharp from 'sharp';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { query, solidImage, testApp } from './helpers.js';
+import { buildApp } from '../src/app.js';
+import { query, solidImage, testApp, testConfig } from './helpers.js';
 
 const PHOTO = 'https://images.test/photo.jpg';
 const LOGO = 'https://images.test/logo.png';
@@ -223,6 +224,33 @@ describe('GET /process', () => {
       expect(limited.statusCode).toBe(429);
       expect(limited.json().error.code).toBe('RATE_LIMITED');
       expect(limited.headers['retry-after']).toBeDefined();
+    });
+
+    it('sheds load once the download queue is full', async () => {
+      let started!: () => void;
+      const fetchStarted = new Promise<void>((resolve) => (started = resolve));
+      let release!: () => void;
+      const blocked = new Promise<void>((resolve) => (release = resolve));
+
+      app = await buildApp({
+        config: testConfig({ MAX_CONCURRENT_FETCHES: '1', MAX_QUEUED_FETCHES: '0' }),
+        fetchSource: async (url) => {
+          started();
+          await blocked;
+          return { buffer: files[url.href]!, url: url.href };
+        },
+        logger: false,
+      });
+
+      const slow = app.inject(`/process?${query({ url: PHOTO, width: 50 })}`);
+      await fetchStarted;
+      const busy = await app.inject(`/process?${query({ url: LOGO, width: 50 })}`);
+      expect(busy.statusCode).toBe(503);
+      expect(busy.json().error.code).toBe('SERVER_BUSY');
+      expect(busy.headers['retry-after']).toBeDefined();
+
+      release();
+      expect((await slow).statusCode).toBe(200);
     });
   });
 });

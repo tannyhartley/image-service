@@ -237,22 +237,41 @@ the limits I chose and why. Each is configurable through environment variables (
 
 **Abuse and load**
 
-| Safeguard   | Value                          | Reasoning                                                                                                                                                                                                             |
-| ----------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Rate limit  | 120 req/min per IP             | Comfortable for a person using the playground (2 requests per run) and for page loads with many images. It stops naive scripted abuse. Set `TRUST_PROXY=true` behind a load balancer so the real client IP is used.   |
-| Concurrency | CPU cores, 64 queued, then 503 | Image encoding is CPU-bound. Running more jobs than cores just makes every one slower. Once the queue is full, shedding load with a fast 503 and `Retry-After` beats letting latency grow until everything times out. |
+| Safeguard   | Value                             | Reasoning                                                                                                                                                                                                                                 |
+| ----------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rate limit  | 120 req/min per IP                | Comfortable for a person using the playground (2 requests per run) and for page loads with many images. It stops naive scripted abuse. Set `TRUST_PROXY=true` behind a load balancer so the real client IP is used.                       |
+| Concurrency | CPU cores, 64 queued, then 503    | Image encoding is CPU-bound. Running more jobs than cores just makes every one slower. Once the queue is full, shedding load with a fast 503 and `Retry-After` beats letting latency grow until everything times out.                     |
+| Downloads   | 8 concurrent, 32 queued, then 503 | The rate limit caps requests per minute, not how many are in flight. Without this, one client could start 120 different 15 MB downloads in the same second (about 1.8 GB buffered). Identical URLs are coalesced, so they share one slot. |
 
 **Caching**
 
-- **Output cache:** in-memory LRU, 256 MB, 1 h TTL. It stores processed images keyed by the
+- **Output cache:** in-memory LRU, 128 MB, 1 h TTL. It stores processed images keyed by the
   normalised parameters, so repeated requests skip both the fetch and the transform.
-- **Source cache:** in-memory LRU, 128 MB, 5 min TTL. It stores downloaded originals. This
+- **Source cache:** in-memory LRU, 64 MB, 5 min TTL. It stores downloaded originals. This
   makes the common "same image, try different settings" pattern cheap, and lets `/metadata` and
   `/process` share one download.
 - **HTTP caching:** `Cache-Control: public, max-age=86400, stale-while-revalidate=86400`, plus a
   strong `ETag`. Clients and CDNs can cache results and revalidate with `If-None-Match` (304).
   I didn't mark responses `immutable`, because the image behind a source URL can change.
 - **Errors** are `no-store`, so a transient upstream failure isn't cached.
+- libvips' own operation cache is turned off, since it would duplicate the caches above.
+
+**Memory budget**
+
+Every limit above also caps memory, so the worst case can be estimated up front:
+
+| Component                    | Worst case with defaults                        |
+| ---------------------------- | ----------------------------------------------- |
+| Node runtime and libvips     | ~100 MB                                         |
+| Output + source caches       | 192 MB                                          |
+| Downloads in flight          | 8 × 15 MB = 120 MB                              |
+| Decoding, per concurrent job | up to ~200 MB (a 50 MP RGBA image held in full) |
+
+libvips streams most pipelines and shrinks JPEG/WebP on load, so typical jobs use a fraction
+of that last figure. The full image is only held when it has to be, for example to rotate it.
+With 2 cores this adds up to about 800 MB, so **1 GB of RAM** is a safe size. For a 512 MB
+free-tier instance, use `MAX_CONCURRENT_JOBS=1`, `MAX_INPUT_PIXELS=25000000`,
+`MAX_CONCURRENT_FETCHES=4` and halve both caches.
 
 ## Deployment
 
