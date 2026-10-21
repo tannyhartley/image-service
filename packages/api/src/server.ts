@@ -15,4 +15,9 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   });
 }
 
-await app.listen({ port: config.port, host: config.host });
+// Not awaited: Vercel Functions intercept listen(), and blocking module evaluation
+// on it there keeps the function from ever starting.
+app.listen({ port: config.port, host: config.host }).catch((err: unknown) => {
+  app.log.fatal({ err }, 'failed to start');
+  process.exit(1);
+});
