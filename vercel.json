@@ -5,7 +5,7 @@
       "root": "packages/api",
       "framework": "fastify",
       "entrypoint": "src/server.ts",
-      "buildCommand": "npm run build"
+      "buildCommand": "npm run build && echo '{\"type\":\"module\"}' > dist/package.json"
     },
     "web": {
       "root": "packages/web",
