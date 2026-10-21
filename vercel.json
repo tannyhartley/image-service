@@ -1,0 +1,26 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "api": {
+      "root": "packages/api",
+      "framework": "fastify",
+      "entrypoint": "src/server.ts"
+    },
+    "web": {
+      "root": "packages/web",
+      "framework": "vite",
+      "buildCommand": "cd ../.. && npm run build -w @image-service/client -w @image-service/web",
+      "outputDirectory": "dist"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(process|metadata|healthz)",
+      "destination": { "service": "api" }
+    },
+    {
+      "source": "/(.*)",
+      "destination": { "service": "web" }
+    }
+  ]
+}
