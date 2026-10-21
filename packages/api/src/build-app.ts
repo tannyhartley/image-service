@@ -2,7 +2,6 @@ import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
-import fastifyStatic from '@fastify/static';
 import Fastify, { type FastifyError, type FastifyServerOptions } from 'fastify';
 import type { Config } from './config.js';
 import { ApiError, errors } from './errors.js';
@@ -92,6 +91,9 @@ export async function buildApp({ config, fetchSource, logger }: AppOptions) {
   imageRoutes(app, service, config);
 
   if (config.webDistDir && existsSync(config.webDistDir)) {
+    // Loaded only when serving the UI: it require()s an ESM-only dependency, which
+    // runtimes without require(esm) support (such as Vercel Functions) reject.
+    const { default: fastifyStatic } = await import('@fastify/static');
     await app.register(fastifyStatic, { root: config.webDistDir, wildcard: false });
   } else {
     app.get('/', async () => ({
