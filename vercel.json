@@ -4,7 +4,8 @@
     "api": {
       "root": "packages/api",
       "framework": "fastify",
-      "entrypoint": "dist/server.js"
+      "entrypoint": "src/server.ts",
+      "buildCommand": "npm run build"
     },
     "web": {
       "root": "packages/web",

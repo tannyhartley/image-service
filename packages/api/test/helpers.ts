@@ -1,5 +1,5 @@
 import sharp from 'sharp';
-import { buildApp } from '../src/app.js';
+import { buildApp } from '../src/build-app.js';
 import { type Config, loadConfig } from '../src/config.js';
 import { errors } from '../src/errors.js';
 import type { SourceFetcher } from '../src/fetch/fetcher.js';

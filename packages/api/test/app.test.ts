@@ -1,6 +1,6 @@
 import sharp from 'sharp';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.js';
+import { buildApp } from '../src/build-app.js';
 import { query, solidImage, testApp, testConfig } from './helpers.js';
 
 const PHOTO = 'https://images.test/photo.jpg';
