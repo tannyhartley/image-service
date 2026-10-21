@@ -1,4 +1,5 @@
 import { availableParallelism } from 'node:os';
+import { resolve } from 'node:path';
 import { z } from 'zod';
 
 const int = (fallback: number, min = 1) => z.coerce.number().int().min(min).default(fallback);
@@ -89,7 +90,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     host: e.HOST,
     logLevel: e.LOG_LEVEL,
     trustProxy: e.TRUST_PROXY,
-    webDistDir: e.WEB_DIST_DIR,
+    // @fastify/static requires an absolute path.
+    webDistDir: e.WEB_DIST_DIR && resolve(e.WEB_DIST_DIR),
     fetch: {
       timeoutMs: e.FETCH_TIMEOUT_MS,
       maxBytes: e.MAX_SOURCE_BYTES,

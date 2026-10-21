@@ -33,7 +33,7 @@ To run the production build (API serving the built UI from one process):
 
 ```bash
 npm run build
-WEB_DIST_DIR=packages/web/dist npm start   # http://localhost:3000
+WEB_DIST_DIR=$PWD/packages/web/dist npm start   # http://localhost:3000
 ```
 
 Or with Docker:
